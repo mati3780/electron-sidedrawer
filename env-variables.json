@@ -1,0 +1,7 @@
+{
+  "apiIdentifier": "https://user-api-stg.sidedrawer.com",
+  "auth0Domain": "acc-stg.sidedrawer.com",
+  "clientId": "mlrHdBocxyUYfJJ20mCtE917J9VC7wmr",
+  "apiRecord": "https://records-api-dev.sidedrawerdev.com/api/v1/",
+  "apiRecordDomain": "https://records-api-dev.sidedrawerdev.com"
+}

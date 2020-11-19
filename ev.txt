@@ -1,0 +1,21 @@
+DEV
+{
+  "apiIdentifier": "https://user-api-stg.sidedrawer.com",
+  "auth0Domain": "acc-stg.sidedrawer.com",
+  "clientId": "mlrHdBocxyUYfJJ20mCtE917J9VC7wmr"
+}
+test
+{
+  "apiIdentifier": "https://sidedrawer-test.auth0.com/api/v2/",
+  "auth0Domain": "sidedrawer-test.auth0.com",
+  "clientId": "Uu44JT8dAJlLR0JwslNxdhEcx1dKbZ33"
+}
+
+
+{
+  "apiIdentifier": "https://my-resource-serverApiPrueba",
+  "auth0Domain": "mdoder.auth0.com",
+  "clientId": "CIQ6FMbf3FwO0woa2FXNTktLmD6AG1wr"
+}
+
+
