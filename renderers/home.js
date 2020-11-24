@@ -5,10 +5,9 @@ const authService = remote.require('./services/auth-service');
 const authProcess = remote.require('./main/auth-process');
 const fs = require('fs')
 const envVariables = require('../env-variables');
-const { apiRecord, apiRecordDomain } = envVariables;
-var folder;
-var records;
-var sidedrawerId;
+const { apiRecord, apiRecordDomain, root, otherSide, mySide } = envVariables;
+const userHome = require('user-home');
+var recordsTypes;
 
 const webContents = remote.getCurrentWebContents();
 
@@ -25,13 +24,7 @@ document.getElementById('logout').onclick = () => {
 };
 
 document.getElementById('secured-request').onclick = () => {
-
-  const userHome = require('user-home');
-  folder = userHome + '\\SideDrawer Inc';
-  createFolder(folder);
-  folder = folder + '\\Own SideDrawers';
-  createFolder(folder);
- // getRecordTypes();
+  getRecordTypes();
   getNetwork();
 };
 
@@ -47,29 +40,56 @@ function createFolder(folderName) {
   }
 };
 
-function getNetwork(){
- 
-  axios.get(`${apiRecord}network?sidedrawerRole=sd_owner`, {
+function getPathFolder(my) {
+  var folder = `${userHome}\\${root}`;
+  createFolder(folder);
+  folder = `${folder}\\${my ? mySide : otherSide}`;
+  createFolder(folder);
+  return folder;
+}
+
+function createSidedrawers(my, data) {
+
+  //const sideDrawers = data.filter(r => (my && r.sidedrawerRole == 'sd_owner') || (!my && r.sidedrawerRole != 'sd_owner'));
+  const sideDrawers = data.filter(r => (my && r.sdRole == 'sd_owner') || (!my && r.sdRole != 'sd_owner'));
+  if (sideDrawers.length > 0) {
+    const folder = getPathFolder(my);
+    sideDrawers.forEach((s) => {
+
+      // var folderSidedrawer = `${folder}\\${s.sidedrawer.name}`;
+      var folderSidedrawer = `${folder}\\${s.name}`;
+      createFolder(folderSidedrawer)
+      //getSidedrawerRecords(folderSidedrawer, s.sidedrawer.id);
+      getSidedrawerRecords(folderSidedrawer, s.id);
+
+    });
+  }
+}
+
+function getNetwork() {
+
+  // axios.get(`${apiRecord}network`, {
+  axios.get(`${apiRecord}sidedrawer/others`, {
     headers: {'Authorization': `Bearer ${authService.getAccessToken()}`,},
   }).then((response) => {
-    sidedrawerId = response.data[0].sidedrawer.id;
-    getSidedrawerRecords();
+
+    createSidedrawers(true, response.data);
+    createSidedrawers(false, response.data);
 
   }).catch((error) => {
     if (error) throw new Error(error);
   });
   }
 
-function getSidedrawerRecords()
+function getSidedrawerRecords(folder, sidedrawerId)
 {
   axios.get(`${apiRecord}sidedrawer/sidedrawer-id/${sidedrawerId}/records`, {
     headers: {'Authorization': `Bearer ${authService.getAccessToken()}`, },
   }).then((response) => {
 
-    records = response.data;
-    getRecordTypes();
+    createRecords(folder, sidedrawerId, response.data);
   }).catch((error) => {
-    if (error) throw new Error(error);
+    if (error && error.response.status != 404) throw new Error(error);
   });
 
 }
@@ -78,31 +98,35 @@ function getSidedrawerRecords()
 
 function getRecordTypes() {
   axios.get(`${apiRecord}records-type?order=ASC`, {
-     headers: {'Authorization': `Bearer ${authService.getAccessToken()}`,},
+    headers: { 'Authorization': `Bearer ${authService.getAccessToken()}`, },
   }).then((response) => {
-
-    response.data.forEach((recordType) => {
-      var folderRecorType = `${folder}\\${recordType.displayValue[0].value}`;
-      createFolder(folderRecorType);
-      const recordsAssociated = records.filter(r => r.recordType.id == recordType.id);
-      recordsAssociated.forEach((record) => {
-        createFolder(`${folderRecorType}\\${record.name}`);
-        const path = `${folderRecorType}\\${record.name}`;
-        getRecordFiles(path, record.id);
-        
-      });
-      
-    });
-
-
+    recordsTypes = response.data;
   }).catch((error) => {
     if (error) throw new Error(error);
   });
 }
 
 
-function getRecordFiles(path,recordId) {
+function createRecords(folder, sidedrawerId, records) {
 
+  recordsTypes.forEach((recordType) => {
+
+    var folderRecorType = `${folder}\\${recordType.displayValue[0].value}`;
+    createFolder(folderRecorType);
+    const recordsAssociated = records.filter(r => r.recordType.id == recordType.id);
+
+    recordsAssociated.forEach((record) => {
+      const path = `${folderRecorType}\\${record.name}`;
+      createFolder(path);
+      getRecordFiles(path, sidedrawerId, record.id);
+          
+        });
+
+    });
+}
+
+
+function getRecordFiles(path, sidedrawerId, recordId) {
 
 
   axios.get(`${apiRecord}sidedrawer/sidedrawer-id/${sidedrawerId}/records/record-id/${recordId}/record-files`, {
@@ -112,12 +136,15 @@ function getRecordFiles(path,recordId) {
 //https://records-api-dev.sidedrawerdev.com/api/v1/sidedrawer/sidedrawer-id/5fa5e4b70c836ad25cfdcf56/records/record-id/5fac4b16be10c63b5bf6da94/record-files/YY113161711731_pago_03-11.pdf
 
    // getFile();
-    const files = response.data.filter(f => f.files.length > 0);
-    files.forEach((file) => {
+    const filesFilter = response.data.filter(f => f.files.length > 0);
+    filesFilter.forEach((file) => {
+      file.files.forEach((f) => {
+        const extension = f.fileUrl.split(/[\s/]+/).pop().split(/[\s.]+/).pop();
+        const fileName = `${file.uploadTitle}${f.caption}.${extension}`;
+        getFile(path, fileName, f.fileUrl);
 
-      const extension = file.files[0].fileUrl.split(/[\s/]+/).pop().split(/[\s.]+/).pop();
-      const fileName = `${file.uploadTitle}.${extension}`;
-      getFile(path, fileName, file.files[0].fileUrl); 
+      }
+      );
 
     });
 
@@ -126,7 +153,7 @@ function getRecordFiles(path,recordId) {
     // messageJumbotron.style.display = 'block';
 
   }).catch((error) => {
-    if (error) throw new Error(error);
+    if (error && error.response.status != 404) throw new Error(error);
   });
 }
 
