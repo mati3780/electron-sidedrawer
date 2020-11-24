@@ -50,17 +50,14 @@ function getPathFolder(my) {
 
 function createSidedrawers(my, data) {
 
-  //const sideDrawers = data.filter(r => (my && r.sidedrawerRole == 'sd_owner') || (!my && r.sidedrawerRole != 'sd_owner'));
   const sideDrawers = data.filter(r => (my && r.sdRole == 'sd_owner') || (!my && r.sdRole != 'sd_owner'));
   if (sideDrawers.length > 0) {
     const folder = getPathFolder(my);
     sideDrawers.forEach((s) => {
 
-      // var folderSidedrawer = `${folder}\\${s.sidedrawer.name}`;
       var folderSidedrawer = `${folder}\\${s.name}`;
       createFolder(folderSidedrawer)
-      //getSidedrawerRecords(folderSidedrawer, s.sidedrawer.id);
-      getSidedrawerRecords(folderSidedrawer, s.id);
+      getSidedrawerRecords(folderSidedrawer, s);
 
     });
   }
@@ -81,13 +78,13 @@ function getNetwork() {
   });
   }
 
-function getSidedrawerRecords(folder, sidedrawerId)
+function getSidedrawerRecords(folder, sidedrawer)
 {
-  axios.get(`${apiRecord}sidedrawer/sidedrawer-id/${sidedrawerId}/records`, {
+  axios.get(`${apiRecord}sidedrawer/sidedrawer-id/${sidedrawer.id}/records`, {
     headers: {'Authorization': `Bearer ${authService.getAccessToken()}`, },
   }).then((response) => {
 
-    createRecords(folder, sidedrawerId, response.data);
+    createRecords(folder, sidedrawer, response.data);
   }).catch((error) => {
     if (error && error.response.status != 404) throw new Error(error);
   });
@@ -107,22 +104,29 @@ function getRecordTypes() {
 }
 
 
-function createRecords(folder, sidedrawerId, records) {
+function createRecords(folder, sidedrawer, records) {
 
-  recordsTypes.forEach((recordType) => {
+  records.forEach((record) => {
 
-    var folderRecorType = `${folder}\\${recordType.displayValue[0].value}`;
+    const recordType = recordsTypes.find(r => r.id == record.recordType.id);
+    const folderRecorType = `${folder}\\${recordType.displayValue[0].value}`;
     createFolder(folderRecorType);
-    const recordsAssociated = records.filter(r => r.recordType.id == recordType.id);
 
-    recordsAssociated.forEach((record) => {
-      const path = `${folderRecorType}\\${record.name}`;
-      createFolder(path);
-      getRecordFiles(path, sidedrawerId, record.id);
-          
-        });
+    const path = `${folderRecorType}\\${record.name}`;
+    createFolder(path);
+    getRecordFiles(path, sidedrawer.id, record.id);
+
+  });
+
+  if (sidedrawer.sdRole.substring(0, 3) != 'rec') {
+    const recordTypesToCreate = recordsTypes.filter(r => records.filter(rec => rec.recordType.id == r.id).length == 0);
+    recordTypesToCreate.forEach((rt) => {
+      createFolder(`${folder}\\${rt.displayValue[0].value}`);
 
     });
+
+  }
+
 }
 
 

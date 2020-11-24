@@ -39,6 +39,9 @@ function createAuthWindow() {
   win.on('closed', () => {
     win = null;
   });
+
+  //only for debug
+  win.webContents.openDevTools();
 }
 
 function destroyAuthWin() {
