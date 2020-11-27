@@ -27,3 +27,7 @@ div.profile img {
 div#message {
   display: none;
 }
+
+.row {
+  padding-top: 20px;
+}
