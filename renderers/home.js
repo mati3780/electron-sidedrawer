@@ -8,10 +8,22 @@ const envVariables = require('../env-variables');
 const { apiRecord, apiRecordDomain, root, otherSide, mySide } = envVariables;
 const userHome = require('user-home');
 const chokidar = require('chokidar');
+
+///chokidar-watcher
 const FormData = require('form-data');
 var recordsTypes;
 var watcher = null;
 var watcherReady = false;
+
+// var Datastore = require('nedb')
+//   , db = new Datastore({ filename: 'db/datafile' });
+// db.loadDatabase(function (err) {    // Callback is optional
+//   // Now commands will be executed
+// });
+
+var Datastore = require('nedb');
+//var db = new Datastore();
+var recordTable = new Datastore({ filename: 'db/records.db', autoload: true });
 
 const webContents = remote.getCurrentWebContents();
 
@@ -79,66 +91,18 @@ function StartWatcher(path) {
   watcher
     .on('add', function (path) {
       if (watcherReady) {
+
         console.log('File', path, 'has been added');
 
-
-        const formData = new FormData();
-        formData.append('file', fs.createReadStream(path));
-        // axios.post(`${apiRecord}sidedrawer/sidedrawer-id/5fbba941630a0e4fba05c49b/records/record-id/5fbbac96630a0e216605c4a4/record-files?fileName=YYMMDDHHMMSS_Nuevoswagger1&correlationId=123213213&uploadTitle=nuevoPost%20real&fileType=document`, formData, {
-        //   // You need to use `getHeaders()` in Node.js because Axios doesn't
-        //   // automatically set the multipart form boundary in Node.
-        //   // headers: formData.getHeaders()
-        //   headers: {
-        //     "Authorization": `Bearer ${authService.getAccessToken()}`,
-        //     "Content-Type": "multipart/form-data"
-        //     //,
-        //     // "Access-Control-Allow-Origin": "*"
-        //   }
-        //   //,
-        //   // data: formData
-        // }).then((response) => {
-        //   console.log(response);
-        // }, (error) => {
-        //   console.log(error);
-        // });
-
-        var url = `${apiRecord}sidedrawer/sidedrawer-id/5fbba941630a0e4fba05c49b/records/record-id/5fbbac96630a0e216605c4a4/record-files?fileName=YYMMDDHHMMSS_Nuwr1&correlationId=45444fsdfsdf&uploadTitle=nuev%20real&fileType=document`;
-        const config = {
-          headers: {
-            ...formData.getHeaders(),
-            Authorization: `Bearer ${authService.getAccessToken()}`
-          }
-        }
-
-        axios.post(url, formData, config)
-          .then(response =>
-            console.log(response.data, response.status))
-          .catch(err =>
-            console.error(err.config, err.response.data));
-        // var newFile = fs.createReadStream(path);
-
-        // // personally I'd function out the inner body here and just call 
-        // // to the function and pass in the newFile
-        // newFile.on('end', function () {
-        //   const form_data = new FormData();
-        //   form_data.append("file", newFile);
-        //   const request_config = {
-        //     // method: "post",
-        //     url: `sidedrawer/sidedrawer-id/5fbba941630a0e4fba05c49b/records/record-id/5fbbac96630a0e216605c4a4/record-files?fileName=YYMMDDHHMMSS_Nuevoswagger1&correlationId=123213213&uploadTitle=nbre%20real&fileType=document`,
-        //     headers: {
-        //       "Authorization": `Bearer ${authService.getAccessToken()}`,
-        //       "Content-Type": "multipart/form-data"
-        //     },
-        //     data: form_data
-        //   };
+        const split = path.split("\\");
+        const x = split.slice(0, split.length - 1).join("\\");
 
 
-        // axios.post(request_config)
-        //   .then((response) => {
-        //     console.log(response);
-        //   }, (error) => {
-        //     console.log(error);
-        //   });
+        recordTable.findOne({ path: x }, function (err, doc) {
+          postFile(path, doc);
+
+        });
+
       }
     }
 
@@ -213,6 +177,33 @@ function createFolder(folderName) {
   }
 };
 
+
+
+function postFile(path, record) {
+
+  const formData = new FormData();
+  formData.append('file', fs.createReadStream(path));
+
+  const split = path.split("\\").slice(-1)[0].split(".");
+  const uploadtitle = split.slice(0, split.length - 1).join(".");
+  const correlationId = `YY${Math.random()}`;
+  const fileName = `${correlationId}${uploadtitle}`
+
+  const url = `${apiRecord}sidedrawer/sidedrawer-id/${record.sidedrawerId}/records/record-id/${record.id}/record-files?fileName=${fileName}&correlationId=${correlationId}&uploadTitle=${uploadtitle}&fileType=document`;
+  const config = {
+    headers: {
+      ...formData.getHeaders(),
+      Authorization: `Bearer ${authService.getAccessToken()}`
+    }
+  }
+
+  axios.post(url, formData, config)
+    .then(response =>
+      console.log(response.data, response.status))
+    .catch(err =>
+      console.error(err.config, err.response.data));
+
+}
 
 function getPathFolder(my) {
   var folder = `${userHome}\\${root}`;
@@ -289,8 +280,16 @@ function createRecords(folder, sidedrawer, records) {
 
     const path = `${folderRecorType}\\${record.name}`;
     createFolder(path);
-    getRecordFiles(path, sidedrawer.id, record.id);
-
+    record.path = path;
+    record.sidedrawerId = sidedrawer.id;
+    recordTable.insert(record, function (err, doc) {
+      console.log('Inserted', record.path, 'with ID', doc._id);
+    });
+    if (sidedrawer.sdRole != 'rec_info' && sidedrawer.sdRole != 'sd_info')
+      getRecordFiles(path, sidedrawer.id, record.id);
+    else
+      createReadme(path);
+     
   });
 
   if (sidedrawer.sdRole.substring(0, 3) != 'rec') {
@@ -304,6 +303,11 @@ function createRecords(folder, sidedrawer, records) {
 
 }
 
+function createReadme(path) {
+  var file = fs.createWriteStream(`${path}\\readme.txt`);
+  file.write("You don't have enough permission to view the contents of this Record.");
+  file.end();
+}
 
 function getRecordFiles(path, sidedrawerId, recordId) {
 
