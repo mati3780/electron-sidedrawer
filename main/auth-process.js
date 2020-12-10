@@ -41,7 +41,7 @@ function createAuthWindow() {
   });
 
   //only for debug
-  win.webContents.openDevTools();
+  //win.webContents.openDevTools();
 }
 
 function destroyAuthWin() {
