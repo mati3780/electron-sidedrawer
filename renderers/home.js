@@ -323,7 +323,7 @@ function getRecordFiles(path, sidedrawerId, recordId) {
     filesFilter.forEach((file) => {
       file.files.forEach((f) => {
         const extension = f.fileUrl.split(/[\s/]+/).pop().split(/[\s.]+/).pop();
-        const fileName = `${file.uploadTitle}${f.caption}.${extension}`;
+        const fileName = `${file.uploadTitle}${f.caption ? '_' + f.caption : ''}.${extension}`;
         getFile(path, fileName, f.fileUrl);
 
       }
