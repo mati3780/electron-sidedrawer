@@ -39,7 +39,7 @@ function createAuthWindow() {
   win.on('closed', () => {
     win = null;
   });
-
+  win.setMenu(null);
   //only for debug
   //win.webContents.openDevTools();
 }

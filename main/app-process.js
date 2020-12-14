@@ -9,6 +9,7 @@ function createAppWindow() {
       enableRemoteModule: true
     }
   });
+  //only for debug
   win.setMenu(null);
 
   win.loadFile('./renderers/home.html');

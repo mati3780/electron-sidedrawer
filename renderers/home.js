@@ -1,28 +1,24 @@
 const { remote } = require('electron');
-const axios = require('axios');
-axios.defaults.adapter = require('axios/lib/adapters/http');
+ const axios = require('axios');
+ axios.defaults.adapter = require('axios/lib/adapters/http');
 const authService = remote.require('./services/auth-service');
+const sidedrawerService = remote.require('./services/sidedrawer-service');
+const recordService = remote.require('./services/record-service');
+const recordTypeService = remote.require('./services/recordType-service');
+const recordFileService = remote.require('./services/recordFile-service');
 const authProcess = remote.require('./main/auth-process');
 const fs = require('fs')
 const envVariables = require('../env-variables');
 const { apiRecord, apiRecordDomain, root, otherSide, mySide } = envVariables;
 const userHome = require('user-home');
 const chokidar = require('chokidar');
-
-///chokidar-watcher
 const FormData = require('form-data');
 var recordsTypes;
 var watcher = null;
 var watcherReady = false;
 
-// var Datastore = require('nedb')
-//   , db = new Datastore({ filename: 'db/datafile' });
-// db.loadDatabase(function (err) {    // Callback is optional
-//   // Now commands will be executed
-// });
 
 var Datastore = require('nedb');
-//var db = new Datastore();
 var recordTable = new Datastore({ filename: 'db/records.db', autoload: true });
 
 const webContents = remote.getCurrentWebContents();
@@ -60,7 +56,7 @@ document.getElementById("stop").addEventListener("click", function (e) {
     watcher.close();
     document.getElementById("start").disabled = false;
     watcherReady = false;
-    ///document.getElementById("messageLogger").innerHTML = "Nothing is being watched";
+
   }
 }, false);
 
@@ -107,23 +103,6 @@ function StartWatcher(path) {
     }
 
 
-      // 5fbba941630a0e4fba05c49b
-
-
-      // 5fbbac96630a0e216605c4a4
-
-      // correlationId: "YY113280911346"
-      // fileType: "document"
-      // uploadTitle
-
-      // C: \Users\mati\SideDrawer Inc\Other SideDrawers\otra comartida clovinn\Identity Documents\clovin record
-
-
-      // "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlFqQkVRVFl3TmtJeU5URkVNa0ZCUlRFNE5EYzJSRFZFTVRSRU56VXdPVVJFUmpoQk1qSTRPUSJ9.eyJodHRwczovL3NpZGVkcmF3ZXIuY29tL3JvbGVzIjpbXSwiaHR0cHM6Ly9zaWRlZHJhd2VyLmNvbS9nZW9pcCI6eyJjb3VudHJ5X2NvZGUiOiJBUiIsImNvdW50cnlfY29kZTMiOiJBUkciLCJjb3VudHJ5X25hbWUiOiJBcmdlbnRpbmEiLCJjaXR5X25hbWUiOiJMb21hcyBkZSBaYW1vcmEiLCJsYXRpdHVkZSI6LTM0Ljc2NjEsImxvbmdpdHVkZSI6LTU4LjM5NTcsInRpbWVfem9uZSI6IkFtZXJpY2EvQXJnZW50aW5hL0J1ZW5vc19BaXJlcyIsImNvbnRpbmVudF9jb2RlIjoiU0EifSwiaHR0cHM6Ly9zaWRlZHJhd2VyLmNvbS9jbGllbnQiOiJtbHJIZEJvY3h5VVlmSkoyMG1DdEU5MTdKOVZDN3dtciIsImlzcyI6Imh0dHBzOi8vYWNjLXN0Zy5zaWRlZHJhd2VyLmNvbS8iLCJzdWIiOiJhdXRoMHw1ZmE1ZTQ4OWEzYzhmNjAwNjhmYTU5MmIiLCJhdWQiOlsiaHR0cHM6Ly91c2VyLWFwaS1zdGcuc2lkZWRyYXdlci5jb20iLCJodHRwczovL3NpZGVkcmF3ZXItc3RnLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2MDY1MTEwMjgsImV4cCI6MTYwNjU5NzQyOCwiYXpwIjoibWxySGRCb2N4eVVZZkpKMjBtQ3RFOTE3SjlWQzd3bXIiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIG9mZmxpbmVfYWNjZXNzIiwicGVybWlzc2lvbnMiOltdfQ.F7yG3r_JY_yPV3U_MvZUaG3dWFaM4c3qREpDuOULS9HxihpJovbsBYrR6i9x4OyqPIlaompFKhrO2GlBRz9VVqa1au8RrNHHDHUksEUWjx-mga1F8EDRgCvIAkEMOvhBRKtZMFQHzIGo76r81Uvpru69LgUAaiXLxIYMc20eM0a0MOhUqHllBeGa3O59S86rHzrvqJ5McxciOxSbtFINcvDR1hZNJLWHyh9rDeNbOHkvIvhACYpqQaLI9L4_35_Y8jMzCn-jhLMtiIn_cQRslgNtMgywDY-eDEhJNX6Ckdn1JRQ6IJDAsFESoQDDSS-64x_dKfp-Pn07p0Jx_8d5Pg"
-
-      // https://records-api-dev.sidedrawerdev.com/api/v1/sidedrawer/sidedrawer-id/5fbba941630a0e4fba05c49b/records/record-id/5fbbac96630a0e216605c4a4/record-files?fileName=YYMMDDHHMMSS_Nuevoswagger1&correlationId=123213213&uploadTitle=nombre%20real&fileType=document
-
-
     )
     .on('addDir', function (path) {
       if (watcherReady) {
@@ -160,7 +139,7 @@ function StartWatcher(path) {
     })
     .on('ready', onWatcherReady)
     .on('raw', function (event, path, details) {
-      // This event should be triggered everytime something happens.
+
       console.log('Raw event info:', event, path, details);
     });
 };
@@ -189,19 +168,7 @@ function postFile(path, record) {
   const correlationId = `YY${Math.random()}`;
   const fileName = `${correlationId}${uploadtitle}`
 
-  const url = `${apiRecord}sidedrawer/sidedrawer-id/${record.sidedrawerId}/records/record-id/${record.id}/record-files?fileName=${fileName}&correlationId=${correlationId}&uploadTitle=${uploadtitle}&fileType=document`;
-  const config = {
-    headers: {
-      ...formData.getHeaders(),
-      Authorization: `Bearer ${authService.getAccessToken()}`
-    }
-  }
-
-  axios.post(url, formData, config)
-    .then(response =>
-      console.log(response.data, response.status))
-    .catch(err =>
-      console.error(err.config, err.response.data));
+  recordFileService.post(formData, { sidedrawerId: record.sidedrawerId, recordId: record.id, fileName, correlationId, uploadtitle })
 
 }
 
@@ -230,43 +197,31 @@ function createSidedrawers(my, data) {
 }
 
 function getNetwork() {
+  const network = sidedrawerService.getNetwork();
 
-  // axios.get(`${apiRecord}network`, {
-  axios.get(`${apiRecord}sidedrawer/others`, {
-    headers: {'Authorization': `Bearer ${authService.getAccessToken()}`,},
-  }).then((response) => {
-
+  network.then((response) => {
     createSidedrawers(true, response.data);
     createSidedrawers(false, response.data);
-
-  }).catch((error) => {
-    if (error) throw new Error(error);
   });
+
   }
 
 function getSidedrawerRecords(folder, sidedrawer)
 {
-  axios.get(`${apiRecord}sidedrawer/sidedrawer-id/${sidedrawer.id}/records`, {
-    headers: {'Authorization': `Bearer ${authService.getAccessToken()}`, },
-  }).then((response) => {
+  const records = recordService.getBySidedrawer(sidedrawer.id);
 
+  records.then((response) => {
     createRecords(folder, sidedrawer, response.data);
-  }).catch((error) => {
-    if (error && error.response.status != 404) throw new Error(error);
   });
-
 }
 
-
-
 function getRecordTypes() {
-  axios.get(`${apiRecord}records-type?order=ASC`, {
-    headers: { 'Authorization': `Bearer ${authService.getAccessToken()}`, },
-  }).then((response) => {
+
+  const recordTypes = recordTypeService.get();
+  recordTypes.then((response) => {
     recordsTypes = response.data;
-  }).catch((error) => {
-    if (error) throw new Error(error);
   });
+
 }
 
 
@@ -282,9 +237,9 @@ function createRecords(folder, sidedrawer, records) {
     createFolder(path);
     record.path = path;
     record.sidedrawerId = sidedrawer.id;
-    recordTable.insert(record, function (err, doc) {
-      console.log('Inserted', record.path, 'with ID', doc._id);
-    });
+
+    recordTable.update({ id: record.id }, record, { upsert: true }, function (err, result) { });
+
     if (sidedrawer.sdRole != 'rec_info' && sidedrawer.sdRole != 'sd_info')
       getRecordFiles(path, sidedrawer.id, record.id);
     else
@@ -311,14 +266,9 @@ function createReadme(path) {
 
 function getRecordFiles(path, sidedrawerId, recordId) {
 
+  const recordFiles = recordFileService.getByRecord(sidedrawerId, recordId)
+  recordFiles.then((response) => {
 
-  axios.get(`${apiRecord}sidedrawer/sidedrawer-id/${sidedrawerId}/records/record-id/${recordId}/record-files`, {
-    headers: { 'Authorization': `Bearer ${authService.getAccessToken()}`, },
-  }).then((response) => {
-
-//https://records-api-dev.sidedrawerdev.com/api/v1/sidedrawer/sidedrawer-id/5fa5e4b70c836ad25cfdcf56/records/record-id/5fac4b16be10c63b5bf6da94/record-files/YY113161711731_pago_03-11.pdf
-
-   // getFile();
     const filesFilter = response.data.filter(f => f.files.length > 0);
     filesFilter.forEach((file) => {
       file.files.forEach((f) => {
@@ -326,24 +276,16 @@ function getRecordFiles(path, sidedrawerId, recordId) {
         const fileName = `${file.uploadTitle}${f.caption ? '_' + f.caption : ''}.${extension}`;
         getFile(path, fileName, f.fileUrl);
 
-      }
-      );
+      });
 
     });
-
-    // const messageJumbotron = document.getElementById('message');
-    // messageJumbotron.innerText = JSON.stringify(response.data);
-    // messageJumbotron.style.display = 'block';
-
-  }).catch((error) => {
-    if (error && error.response.status != 404 && error.response.status != 403) throw new Error(error);
   });
 }
 
 
 
 function getFile(path, fileName, url) {
-//sidedrawer/sidedrawer-id/5fa5e4b70c836ad25cfdcf56/records/record-id/5fac4b16be10c63b5bf6da94/record-files/YY113161711731_pago_03-11.pdf
+
   axios.get(`${apiRecordDomain}${url}`, {
     headers: { 'Authorization': `Bearer ${authService.getAccessToken()}`, },
     responseType: 'stream'
@@ -354,6 +296,12 @@ function getFile(path, fileName, url) {
   }).catch((error) => {
     if (error) throw new Error(error);
   });
+  //recordFileService.getById(url);
+  // const file = recordFileService.getById(url);
+  // file.then((response) => {
+  //   var file = fs.createWriteStream(`${path}\\${fileName}`);
+  //   response.data.pipe(file);
+  // });
 }
 
 
